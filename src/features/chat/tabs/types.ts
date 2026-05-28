@@ -213,6 +213,12 @@ export interface TabData {
 
   /** Per-tab renderer. */
   renderer: MessageRenderer | null;
+
+  /** Set on worker tabs: the tab ID of the orchestrator that spawned this tab. */
+  orchestratorTabId?: TabId | null;
+
+  /** Set on orchestrator tabs: IDs of all worker tabs spawned by this orchestrator. */
+  workerTabIds?: TabId[];
 }
 
 export type TabProviderContext = Pick<TabData, 'conversationId' | 'service' | 'providerId' | 'lifecycleState' | 'draftModel'>;
