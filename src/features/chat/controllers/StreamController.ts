@@ -1,7 +1,6 @@
 import { TFile } from 'obsidian';
 
 import { ProviderSettingsCoordinator } from '../../../core/providers/ProviderSettingsCoordinator';
-import { extractOrchestratorPlan } from '../rendering/orchestratorPlanParser';
 import {
   DEFAULT_CHAT_PROVIDER_ID,
   type ProviderId,
@@ -37,6 +36,7 @@ import { hasStreamingMathDelimiters } from '../../../utils/markdownMath';
 import { getVaultPath, normalizePathForVault } from '../../../utils/path';
 import { FLAVOR_TEXTS } from '../constants';
 import type { MessageRenderer, RenderContentOptions } from '../rendering/MessageRenderer';
+import { extractOrchestratorPlan, type OrchestratorPlan } from '../rendering/orchestratorPlanParser';
 import { resolveSubagentLifecycleAdapter } from '../rendering/subagentLifecycleResolution';
 import {
   createSubagentBlock,
@@ -74,7 +74,7 @@ export interface StreamControllerDeps {
   /** Get the agent service from the tab. */
   getAgentService?: () => ChatRuntime | null;
   /** Called when a complete assistant message contains an orchestrator plan block. */
-  onOrchestratorPlanDetected?: (msgEl: HTMLElement, plan: import('../rendering/orchestratorPlanParser').OrchestratorPlan) => void;
+  onOrchestratorPlanDetected?: (msgEl: HTMLElement, plan: OrchestratorPlan) => void;
   /** Called when a worker tab's stream finishes. Provides the final assistant message text. */
   onWorkerDone?: (result: string, isError: boolean) => void;
 }
