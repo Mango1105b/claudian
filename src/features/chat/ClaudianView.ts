@@ -15,6 +15,7 @@ import {
 } from '../../utils/animationFrame';
 import type { HistoryConversationOpenState } from './controllers/ConversationController';
 import { InlineOrchestratorPlan } from './rendering/InlineOrchestratorPlan';
+import type { OrchestratorPlan } from './rendering/orchestratorPlanParser';
 import { OrchestratorService } from './services/OrchestratorService';
 import { getTabProviderId, onProviderAvailabilityChanged, updatePlanModeUI } from './tabs/Tab';
 import { TabBar } from './tabs/TabBar';
@@ -407,30 +408,45 @@ export class ClaudianView extends ItemView {
 
   private wireOrchestratorCallbacks(tab: TabData): void {
     const tabId = tab.id;
-    tab.controllers.streamController?.setOrchestratorCallbacks(
-      // onOrchestratorPlanDetected
-      (msgEl, plan) => {
-        new InlineOrchestratorPlan(
-          msgEl,
-          plan,
-          async (tasks) => {
-            for (const task of tasks) {
-              const workerTab = await this.tabManager?.createWorkerTab(tabId);
-              if (!workerTab) continue;
-              this.orchestratorService.registerWorker(tabId, workerTab.id, task.description);
-              this.wireOrchestratorCallbacks(workerTab);
-              workerTab.controllers.inputController?.sendMessage({ content: task.prompt });
-            }
-          },
-          () => {}, // onCancel: no-op
-        ).render();
-      },
-      // onWorkerDone
-      (result, isError) => {
-        const orchId = this.orchestratorService.getOrchestratorTabId(tabId);
-        if (orchId) {
+    const isWorker = tab.orchestratorTabId != null;
+
+    // Workers should not generate their own plans — prevent infinite recursion.
+    const onPlanDetected = isWorker
+      ? undefined
+      : (msgEl: HTMLElement, plan: OrchestratorPlan) => {
+          new InlineOrchestratorPlan(
+            msgEl,
+            plan,
+            async (tasks) => {
+              for (const task of tasks) {
+                const workerTab = await this.tabManager?.createWorkerTab(tabId);
+                if (!workerTab) continue;
+                this.orchestratorService.registerWorker(tabId, workerTab.id, task.description);
+                // Wire worker tab: only set onWorkerDone (workers don't generate plans).
+                this.wireWorkerDone(workerTab);
+                workerTab.controllers.inputController?.sendMessage({ content: task.prompt });
+              }
+            },
+            () => {},
+          ).render();
+        };
+
+    // onWorkerDone only applies to worker tabs.
+    const onWorkerDone = isWorker
+      ? (result: string, isError: boolean) => {
           this.orchestratorService.reportResult(tabId, result, isError);
         }
+      : undefined;
+
+    tab.controllers.streamController?.setOrchestratorCallbacks(onPlanDetected, onWorkerDone);
+  }
+
+  private wireWorkerDone(tab: TabData): void {
+    const tabId = tab.id;
+    tab.controllers.streamController?.setOrchestratorCallbacks(
+      undefined,
+      (result, isError) => {
+        this.orchestratorService.reportResult(tabId, result, isError);
       },
     );
   }
