@@ -1,7 +1,6 @@
 import {
   extractOrchestratorPlan,
   type OrchestratorPlan,
-  type OrchestratorTask,
 } from '@/features/chat/rendering/orchestratorPlanParser';
 
 const VALID_PLAN: OrchestratorPlan = {
