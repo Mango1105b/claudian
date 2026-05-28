@@ -428,6 +428,8 @@ export class TabManager implements TabManagerInterface {
         isStreaming: tab.state.isStreaming,
         needsAttention: tab.state.needsAttention,
         canClose: this.tabs.size > 1 || !tab.state.isStreaming,
+        isOrchestrator: tab.workerTabIds != null && tab.workerTabIds.length > 0,
+        isWorker: tab.orchestratorTabId != null,
       });
     }
 
